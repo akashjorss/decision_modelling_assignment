@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pulp import LpProblem, LpMaximize, LpVariable, LpStatus
 
-from nutriscore.constants import ATTRIBUTES, GRADE_HIERARCHY, PETALES, HARMFUL_ATTRIBUTES
+from nutriscore.constants import ATTRIBUTES, GRADE_HIERARCHY, HARMFUL_ATTRIBUTES, PETALES
 from nutriscore.utils import data_reader, preference_reader
 
 
@@ -17,7 +17,7 @@ class AdditiveScore:
         self._marginal_utility_variables_mapping: Dict[str, LpVariable] = {}
         self._prob = LpProblem("The Nutriscore", LpMaximize)
         self.df = validation(df, "input")
-        self.preference_df = validation(preference_df, "input")
+        self.preference_df = validation(preference_df, "preference")
 
     def compute_additive_score(self) -> pd.DataFrame:
         self._compute_marginal_utility()
@@ -28,15 +28,14 @@ class AdditiveScore:
         self._prob, self._problem_variables = self._construct_problem_variables(self.df, type="input")
         self._prob = self._construct_reference_preference()
         self._prob = self._construct_attribute_monotonicity()
-        print(self._prob)
-        self._prob.writeLP('The Nutriscore.lp')
+        self._prob.writeLP("The Nutriscore.lp")
         self._prob.solve()
         our_scores = []
         for problem_variable in self._problem_variables:
             our_scores.append(problem_variable.varValue)
-        self.df['our_score'] = our_scores
+        self.df["our_score"] = our_scores
         print("Status:", LpStatus[self._prob.status])
-        self.df.to_csv('results.csv')
+        self.df.to_csv("additive_model_score_results.csv")
         self._plot_attributes()
         return {}
 
@@ -52,10 +51,11 @@ class AdditiveScore:
             for attribute in ATTRIBUTES:
                 attribute_value = row[attribute]
                 key_name = construct_marginal_value_key(attribute, attribute_value)
-                attribute_values.append(self._marginal_utility_variables_mapping.setdefault(key_name,
-                                                                                            LpVariable(key_name,
-                                                                                                       self._start,
-                                                                                                       self._end)))
+                attribute_values.append(
+                    self._marginal_utility_variables_mapping.setdefault(
+                        key_name, LpVariable(key_name, self._start, self._end)
+                    )
+                )
             summed_attributes = attribute_values[0]
             for i in range(1, len(attribute_values)):
                 summed_attributes += attribute_values[i]
@@ -71,13 +71,15 @@ class AdditiveScore:
         """
         _, preference_df_problem_variables = self._construct_problem_variables(self.preference_df, type="preference")
         for i in range(0, len(GRADE_HIERARCHY) - 1):
-            filtered_i = self.preference_df[self.preference_df['nutriscoregrade'] == GRADE_HIERARCHY[i]]
-            filtered_j = self.preference_df[self.preference_df['nutriscoregrade'] == GRADE_HIERARCHY[i + 1]]
+            filtered_i = self.preference_df[self.preference_df["nutriscoregrade"] == GRADE_HIERARCHY[i]]
+            filtered_j = self.preference_df[self.preference_df["nutriscoregrade"] == GRADE_HIERARCHY[i + 1]]
             for f_i in filtered_i.index:
                 for f_j in filtered_j.index:
-                    self._prob += preference_df_problem_variables[f_j] + self._epsilons[
-                        i] <= preference_df_problem_variables[
-                                      f_i], f"product_{f_i} better than product_{f_j}"
+                    self._prob += (
+                        preference_df_problem_variables[f_j] + self._epsilons[i]
+                        <= preference_df_problem_variables[f_i],
+                        f"product_{f_i} better than product_{f_j}",
+                    )
         return self._prob
 
     def _construct_attribute_monotonicity(self) -> LpProblem:
@@ -91,9 +93,10 @@ class AdditiveScore:
                     continue
                 if (lkey, rkey) in seen_constraints:
                     continue
-                self._prob += self._marginal_utility_variables_mapping[lkey] <= \
-                              self._marginal_utility_variables_mapping[
-                                  rkey], f"{rkey} more preferred than {lkey}"
+                self._prob += (
+                    self._marginal_utility_variables_mapping[lkey] <= self._marginal_utility_variables_mapping[rkey],
+                    f"{rkey} more preferred than {lkey}",
+                )
                 seen_constraints.append((lkey, rkey))
         return self._prob
 
@@ -106,7 +109,10 @@ class AdditiveScore:
         epsilon_b = LpVariable("epsilon_b", start, self._end)
         epsilon_c = LpVariable("epsilon_c", start, self._end)
         epsilon_d = LpVariable("epsilon_d", start, self._end)
-        self._prob += epsilon_a + epsilon_b + epsilon_c + epsilon_d, "slack variables (differences between two consecutive classes) to be maximized"
+        self._prob += (
+            epsilon_a + epsilon_b + epsilon_c + epsilon_d,
+            "slack variables (differences between two consecutive classes) to be maximized",
+        )
         epsilons = [epsilon_a, epsilon_b, epsilon_c, epsilon_d]
         return epsilons, self._prob
 
@@ -116,19 +122,22 @@ class AdditiveScore:
             variable_values = []
             for value in values_df[attribute].values:
                 variable_values.append(
-                    self._marginal_utility_variables_mapping[construct_marginal_value_key(attribute, value)].varValue)
-            values_df['marginal_utility_value'] = variable_values
-            values_df.plot(kind='scatter', x=attribute, y='marginal_utility_value')
-            plt.savefig(f'{attribute}_mariginal_utility_plot.png')
+                    self._marginal_utility_variables_mapping[construct_marginal_value_key(attribute, value)].varValue
+                )
+            values_df["marginal_utility_value"] = variable_values
+            values_df.plot(kind="scatter", x=attribute, y="marginal_utility_value")
+            plt.savefig(f"{attribute}_mariginal_utility_plot.png")
 
 
 def validation(df: pd.DataFrame, type: str) -> pd.DataFrame:
-    required_attributes = ['nutriscoregrade']
+    required_attributes = ["nutriscoregrade"]
     required_attributes.extend(ATTRIBUTES)
     for required_attribute in required_attributes:
         if required_attribute not in df.columns:
             raise AssertionError(f"Attribute {required_attributes} required but not present in {type}: {df.columns}")
-    df['nutriscoregrade'] = df['nutriscoregrade'].str.lower()
+    df["nutriscoregrade"] = df["nutriscoregrade"].str.lower()
+    for attribute in ATTRIBUTES:
+        df[attribute] = df[attribute].fillna(0)
     return df
 
 
@@ -140,8 +149,8 @@ def construct_marginal_value_key(attribute: str, attribute_value: float):
 def main():
     df = data_reader(PETALES)
     preference_df = preference_reader(PETALES)
-    return AdditiveScore(df, preference_df).compute_additive_score()
+    AdditiveScore(df, preference_df).compute_additive_score()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
