@@ -63,12 +63,6 @@ class AdditiveScore:
         return self._prob, problem_variables
 
     def _construct_reference_preference(self) -> LpProblem:
-        """
-        Evenly sample 30% of data across all grades from the input dataset to be used as reference set.
-        For the reference set add constraints such that the problem variable U(a) for class with higher grades have values
-        bigger than that of lower grades by atleast epsilon of the higher grade.
-        [a] >= [b, c, d, e] + epsilon(a); [b] >= [c, d, e] + epsilon(b); [c] >= [d, e] + epsilon(c); [d] >= [e] + epsilon(d)
-        """
         _, preference_df_problem_variables = self._construct_problem_variables(self.preference_df, type="preference")
         for i in range(0, len(GRADE_HIERARCHY) - 1):
             filtered_i = self.preference_df[self.preference_df["nutriscoregrade"] == GRADE_HIERARCHY[i]]
