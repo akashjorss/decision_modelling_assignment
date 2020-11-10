@@ -2,6 +2,7 @@ from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 from pulp import LpProblem, LpMaximize, LpVariable, LpStatus
 
 from nutriscore.constants import ATTRIBUTES, GRADE_HIERARCHY, HARMFUL_ATTRIBUTES, PETALES
@@ -36,8 +37,18 @@ class AdditiveScore:
         self.df["our_score"] = our_scores
         print("Status:", LpStatus[self._prob.status])
         self.df.to_csv("additive_model_score_results.csv")
+        if 'nutriscorescore' in self.df.columns:
+            self._plot_results()
         self._plot_attributes()
         return {}
+
+    def _plot_results(self):
+        f, ax = plt.subplots(figsize=(8, 8))
+        sns.despine(f, left=True, bottom=True)
+        sns_plot = sns.scatterplot(x="nutriscorescore", y="our_score",
+                                   hue="nutriscoregrade",
+                                   data=self.df, ax=ax)
+        sns_plot.get_figure().savefig(f"additive_score_inference.png")
 
     def _construct_problem_variables(self, df: pd.DataFrame, type: str) -> (LpProblem, List[LpVariable]):
         """
