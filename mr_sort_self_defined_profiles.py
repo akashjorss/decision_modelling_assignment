@@ -57,6 +57,7 @@ class MRSort:
         """same as pessimistic, but optimistic"""
         for i in range(len(pi)):
             t = pi.iloc[-i-1]
+            #print("threshold: ", t)
             s_pi = 0
             s_sample = 0
             for c in t.index:
@@ -64,7 +65,7 @@ class MRSort:
                     s_sample += votes[c]
                 if self.comparator(t[c], sample[c], c):
                     s_pi += votes[c]
-                if s_pi >= self.majority_threshold and s_sample < self.majority_threshold:
+                if (s_pi/self.votes.sum()) >= self.majority_threshold and (s_sample/self.votes.sum()) < self.majority_threshold:
                     return (len(pi)-i)
                 
         return 1
@@ -230,6 +231,7 @@ pi = pd.DataFrame([
     ], columns=['energy_100g', 'sugars_100g', 'saturated-fat_100g',  \
          'sodium_100g', 'proteins_100g', 'fiber_100g' ])
 """
+#mrSort.majority_threshold = 0.5
 y_hat = mrSort.classify(data, mrSort.pi, 'optimistic')
 acc = accuracy_score(y, y_hat)
 cm = confusion_matrix(y, y_hat, normalize="true")
