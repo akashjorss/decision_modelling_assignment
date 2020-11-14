@@ -2,9 +2,8 @@ from functools import lru_cache
 from typing import Dict, List, Any
 
 import pandas as pd
-from mlxtend.evaluate import confusion_matrix
+from mlxtend.evaluate import confusion_matrix, accuracy_score
 from mlxtend.plotting import plot_confusion_matrix
-from tqdm import tqdm
 
 from nutriscore.constants import ATTRIBUTES, WEIGHTS, GRADE_HIERARCHY, HARMFUL_ATTRIBUTES, PETALES
 from nutriscore.utils import data_reader
@@ -108,15 +107,21 @@ def main():
     for attribute in ATTRIBUTES:
         data[attribute] = data[attribute].fillna(0)
     profiles = limiting_profiles(PETALES)
-    for threshold in tqdm([0.5, 0.6, 0.7]):
+    for threshold in [0.5, 0.6, 0.7]:
         df = data.copy(deep=True)
+        actual_grade = df["nutriscoregrade"].values
         pessimistic_predictions = pessimistic_majority_sorting(df, profiles, threshold)
-        plot(df["nutriscoregrade"].values, pessimistic_predictions, "Pessimistic", threshold)
+        print(
+            f"Accuracy for Pessimistic Majority Sorting (λ = {threshold}): {accuracy_score(actual_grade, pessimistic_predictions)}")
+        plot(actual_grade, pessimistic_predictions, "Pessimistic", threshold)
         optimistic_predictions = optimistic_majority_sorting(df, profiles, threshold)
-        plot(df["nutriscoregrade"].values, optimistic_predictions, "Optimistic", threshold)
+        print(
+            f"Accuracy for Optimistic Majority Sorting (λ = {threshold}): {accuracy_score(actual_grade, optimistic_predictions)}")
+        plot(actual_grade, optimistic_predictions, "Optimistic", threshold)
         df["pessimistic_grade"] = pessimistic_predictions
         df["optimistic_grade"] = optimistic_predictions
         df.to_csv(f"mr-sort_threshold_{threshold}_results.csv")
+        print("===============================================================================")
 
 
 if __name__ == "__main__":
