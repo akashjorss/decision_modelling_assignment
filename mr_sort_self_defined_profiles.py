@@ -84,8 +84,8 @@ class MRSort:
             s = 0 #sum
             for c in t.index: #for each criterion in threshold
                 if self.comparator(sample[c], t[c], c):
-                    s += votes[c]
-            if s/votes.sum() >= self.majority_threshold:
+                    s += self.votes[c]
+            if s/self.votes.sum() >= self.majority_threshold:
                 return i+1 #return the class
         
         #if none of classes is returned
@@ -209,7 +209,7 @@ comparison = pd.Series([-1, -1, -1, -1, 1, 1], index=data.columns)
 #majority_threshold=0.5
 
 #initialize model
-l = 0.5
+l = 0.7
 m = 'optimistic'
 print(l, m)
 mrSort = MRSort(X_train, y_train, votes, comparison, l)
