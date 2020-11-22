@@ -5,8 +5,8 @@ import pandas as pd
 import seaborn as sns
 from pulp import LpProblem, LpMaximize, LpVariable, LpStatus
 
-from nutriscore.constants import ATTRIBUTES, GRADE_HIERARCHY, HARMFUL_ATTRIBUTES, PETALES
-from nutriscore.utils import data_reader, preference_reader
+from additive_model_and_mr_sort.constants import ATTRIBUTES, GRADE_HIERARCHY, HARMFUL_ATTRIBUTES, PETALES
+from additive_model_and_mr_sort.utils import data_reader, preference_reader
 
 
 class AdditiveScore:

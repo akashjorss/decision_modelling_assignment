@@ -5,8 +5,8 @@ import pandas as pd
 from mlxtend.evaluate import confusion_matrix, accuracy_score
 from mlxtend.plotting import plot_confusion_matrix
 
-from nutriscore.constants import ATTRIBUTES, WEIGHTS, GRADE_HIERARCHY, HARMFUL_ATTRIBUTES, PETALES
-from nutriscore.utils import data_reader
+from additive_model_and_mr_sort.constants import ATTRIBUTES, WEIGHTS, GRADE_HIERARCHY, HARMFUL_ATTRIBUTES, PETALES
+from additive_model_and_mr_sort.utils import data_reader
 
 
 @lru_cache(maxsize=1)
